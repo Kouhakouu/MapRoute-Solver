@@ -1,10 +1,15 @@
 import os
 import osmnx as ox
-from algorithm import shortest_path
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import tkinter as tk
 from tkinter import messagebox
+
+from algorithms.a_star import a_star
+from algorithms.bfs import bfs
+from algorithms.dfs import dfs
+from algorithms.dijkstra import dijkstra
+from algorithms.greedy import greedy
 
 # Bước 1: Tải và xử lý dữ liệu bản đồ, với khả năng lưu và tải lại từ file
 def load_map(place_name, filepath='graph.graphml'):
@@ -25,7 +30,7 @@ class MapApp:
         self.master.title("Tìm Đường Đi Ngắn Nhất")
         self.graph = graph
         self.points = []
-        self.route = []
+        self.routes = {}  # Lưu đường đi của từng thuật toán
         self.node_A = None
         self.node_B = None
 
@@ -54,11 +59,20 @@ class MapApp:
         self.reset_button.pack(side=tk.BOTTOM, pady=10)
 
         # Thêm nhãn để hiển thị chi phí đường đi
-        self.cost_label = tk.Label(self.master, text="Chi phí đường đi: N/A", font=("Arial", 12))
+        self.cost_label = tk.Label(self.master, text="Chi phí đường đi:", font=("Arial", 12))
         self.cost_label.pack(side=tk.BOTTOM, pady=5)
 
         # Kết nối sự kiện click chuột
         self.cid = self.fig.canvas.mpl_connect('button_press_event', self.on_click)
+
+        # Định nghĩa màu sắc cho từng thuật toán
+        self.algorithm_colors = {
+            'BFS': 'green',
+            'DFS': 'orange',
+            'Dijkstra': 'blue',
+            'A*': 'purple',
+            'Greedy': 'red'
+        }
 
     def on_click(self, event):
         if event.xdata and event.ydata:
@@ -72,9 +86,9 @@ class MapApp:
             if len(self.points) == 2:
                 # Ngắt kết nối sự kiện sau khi chọn đủ hai điểm
                 self.fig.canvas.mpl_disconnect(self.cid)
-                self.find_and_plot_route()
+                self.find_and_plot_routes()
 
-    def find_and_plot_route(self):
+    def find_and_plot_routes(self):
         point_A = self.points[0]
         point_B = self.points[1]
 
@@ -85,17 +99,37 @@ class MapApp:
 
             print(f"Node A: {self.node_A}, Node B: {self.node_B}")
 
-            # Tìm đường đi ngắn nhất sử dụng thuật toán Dijkstra
-            self.route = shortest_path(self.graph, self.node_A, self.node_B, weight='length')
-            print(f"Đường đi ngắn nhất: {self.route}")
+            algorithms = {
+                'BFS': bfs,
+                'DFS': dfs,
+                'Dijkstra': dijkstra,
+                'A*': a_star,
+                'Greedy': greedy
+            }
 
-            # Chuyển tuyến đường đi thành GeoDataFrame và tính tổng độ dài
-            route_gdf = ox.routing.route_to_gdf(self.graph, self.route)
-            total_length = route_gdf['length'].sum()
-            print(f"Chi phí đường đi: {total_length:.2f} meters")
+            self.routes = {}
+            total_lengths = {}
+
+            for name, func in algorithms.items():
+                print(f"Tìm đường đi bằng thuật toán {name}...")
+                if name in ['Dijkstra', 'A*']:
+                    path = func(self.graph, self.node_A, self.node_B, weight='length')
+                else:
+                    path = func(self.graph, self.node_A, self.node_B)
+                if path:
+                    self.routes[name] = path
+                    route_gdf = ox.routing.route_to_gdf(self.graph, path)
+                    total_length = route_gdf['length'].sum()
+                    total_lengths[name] = total_length
+                    print(f"{name} đường đi: {path} với chi phí {total_length:.2f} meters")
+                else:
+                    print(f"{name}: Không tìm thấy đường đi.")
 
             # Hiển thị chi phí đường đi trong giao diện người dùng
-            self.cost_label.config(text=f"Chi phí đường đi: {total_length:.2f} meters")
+            cost_text = "Chi phí đường đi:\n"
+            for name, length in total_lengths.items():
+                cost_text += f"{name}: {length:.2f} meters\n"
+            self.cost_label.config(text=cost_text)
 
             # Vẽ đường đi trên bản đồ
             self.ax.cla()  # Xóa bản đồ hiện tại
@@ -115,19 +149,26 @@ class MapApp:
             for point in self.points:
                 self.ax.plot(point[1], point[0], marker='o', markersize=8, markeredgecolor='red', markerfacecolor='yellow')
 
-            # Vẽ đường đi
-            ox.plot_graph_route(
-                self.graph,
-                self.route,
-                ax=self.ax,
-                route_color='blue',
-                route_linewidth=4,
-                node_size=0,
-                show=False,
-                close=False
-            )
+            # Vẽ các đường đi của từng thuật toán
+            for name, path in self.routes.items():
+                color = self.algorithm_colors.get(name, 'black')
+                ox.plot_graph_route(
+                    self.graph,
+                    path,
+                    ax=self.ax,
+                    route_color=color,
+                    route_linewidth=4,
+                    node_size=0,
+                    show=False,
+                    close=False
+                )
 
-            self.ax.legend(['Điểm chọn', 'Đường đi ngắn nhất'], loc='best')
+            # Tạo legend cho các đường đi
+            handles = []
+            for name, color in self.algorithm_colors.items():
+                if name in self.routes:
+                    handles.append(plt.Line2D([0], [0], color=color, lw=4, label=name))
+            self.ax.legend(handles=handles, loc='best')
             self.canvas.draw()
 
         except Exception as e:
@@ -137,7 +178,7 @@ class MapApp:
     def reset_selection(self):
         # Xóa các điểm và đường đi
         self.points = []
-        self.route = []
+        self.routes = {}
         self.node_A = None
         self.node_B = None
 
@@ -157,7 +198,7 @@ class MapApp:
         self.canvas.draw()
 
         # Reset nhãn chi phí đường đi
-        self.cost_label.config(text="Chi phí đường đi: N/A")
+        self.cost_label.config(text="Chi phí đường đi:")
 
         # Kết nối lại sự kiện click chuột
         self.cid = self.fig.canvas.mpl_connect('button_press_event', self.on_click)
