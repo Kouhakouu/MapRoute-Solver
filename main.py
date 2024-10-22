@@ -1,6 +1,6 @@
 import os
 import osmnx as ox
-import networkx as nx
+from algorithm import shortest_path
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import tkinter as tk
@@ -86,7 +86,7 @@ class MapApp:
             print(f"Node A: {self.node_A}, Node B: {self.node_B}")
 
             # Tìm đường đi ngắn nhất sử dụng thuật toán Dijkstra
-            self.route = nx.shortest_path(self.graph, self.node_A, self.node_B, weight='length')
+            self.route = shortest_path(self.graph, self.node_A, self.node_B, weight='length')
             print(f"Đường đi ngắn nhất: {self.route}")
 
             # Chuyển tuyến đường đi thành GeoDataFrame và tính tổng độ dài
