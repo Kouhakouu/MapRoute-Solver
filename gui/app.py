@@ -1,11 +1,10 @@
-# gui/map_app.py
-
 import tkinter as tk
 from tkinter import messagebox, ttk
 import osmnx as ox
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.lines import Line2D  # Để tạo các đối tượng Line2D cho legend
+from typing import List, Tuple
 
 from algorithms import ALGORITHMS  # Import registry từ algorithms/__init__.py
 from loader.loader import load_map
@@ -83,6 +82,10 @@ class MapApp:
         self.legend_handles = []
         self.legend_labels = []
 
+        # Biến để quản lý animation
+        self.current_animation = None  # Giữ trạng thái animation hiện tại
+        self.animation_speed = 100  # Milliseconds giữa mỗi bước vẽ
+
     def on_click(self, event):
         if event.xdata and event.ydata:
             # Chuyển đổi từ hệ trục matplotlib sang latitude và longitude
@@ -154,35 +157,11 @@ class MapApp:
                 new_text = f"{current_text}{algorithm_name}: {total_length:.2f} meters\n"
                 self.cost_label.config(text=new_text)
 
-                # Vẽ đường đi mới
-                ox.plot_graph_route(
-                    self.graph,
-                    path,
-                    ax=self.ax,
-                    route_color=color,
-                    route_linewidth=4,
-                    node_size=0,
-                    show=False,
-                    close=False
-                )
+                # Lấy danh sách các node trong path và chuyển thành danh sách tọa độ
+                node_coords = [(self.graph.nodes[node]['x'], self.graph.nodes[node]['y']) for node in path]
 
-                # Tạo legend cho tuyến đường mới
-                legend_line = Line2D(
-                    [0], [0],
-                    color=color,
-                    lw=4,
-                    label=algorithm_name
-                )
-
-                # Thêm vào danh sách legend_handles và legend_labels nếu chưa có
-                if algorithm_name not in self.legend_labels:
-                    self.legend_handles.append(legend_line)
-                    self.legend_labels.append(algorithm_name)
-
-                    # Cập nhật legend
-                    self.ax.legend(handles=self.legend_handles, labels=self.legend_labels, loc='upper right', title="Thuật toán")
-
-                self.canvas.draw()
+                # Bắt đầu animation vẽ đường đi
+                self.animate_route(node_coords, color, algorithm_name)
             else:
                 messagebox.showinfo("Thông báo", f"Thuật toán {algorithm_name} không tìm thấy đường đi.")
                 print(f"{algorithm_name}: Không tìm thấy đường đi.")
@@ -191,8 +170,77 @@ class MapApp:
             messagebox.showerror("Lỗi", f"Không thể tìm đường đi: {e}")
             print(f"Lỗi khi tìm đường đi: {e}")
 
+    def animate_route(self, node_coords: List[Tuple[float, float]], color: str, algorithm_name: str):
+        if len(node_coords) < 2:
+            print("Không đủ điểm để vẽ đường.")
+            return
+
+        # Tạo danh sách các đoạn cần vẽ
+        segments = []
+        for i in range(len(node_coords) - 1):
+            segments.append((node_coords[i], node_coords[i + 1]))
+
+        # Khởi tạo danh sách vẽ
+        self.current_animation = {
+            'segments': segments,
+            'current_index': 0,
+            'color': color,
+            'algorithm_name': algorithm_name
+        }
+
+        # Bắt đầu vẽ lần đầu tiên
+        self.draw_next_segment()
+
+    def draw_next_segment(self):
+        if not self.current_animation:
+            return
+
+        segments = self.current_animation['segments']
+        index = self.current_animation['current_index']
+        color = self.current_animation['color']
+        algorithm_name = self.current_animation['algorithm_name']
+
+        if index >= len(segments):
+            # Hoàn thành animation, thêm vào legend
+            legend_line = Line2D(
+                [0], [0],
+                color=color,
+                lw=4,
+                label=algorithm_name
+            )
+
+            if algorithm_name not in self.legend_labels:
+                self.legend_handles.append(legend_line)
+                self.legend_labels.append(algorithm_name)
+
+                # Cập nhật legend
+                self.ax.legend(handles=self.legend_handles, labels=self.legend_labels, loc='upper right', title="Thuật toán")
+
+            self.canvas.draw()
+            self.current_animation = None  # Reset trạng thái animation
+            return
+
+        # Lấy đoạn hiện tại
+        segment = segments[index]
+        (x_start, y_start), (x_end, y_end) = segment
+
+        # Vẽ đoạn
+        line, = self.ax.plot([x_start, x_end], [y_start, y_end], color=color, linewidth=4)
+
+        self.canvas.draw()
+
+        # Cập nhật chỉ số
+        self.current_animation['current_index'] += 1
+
+        # Đặt thời gian cho lần vẽ tiếp theo
+        self.master.after(self.animation_speed, self.draw_next_segment)
+
     def reset_selection(self):
         try:
+            # Hủy bất kỳ animation nào đang chạy
+            if self.current_animation:
+                self.current_animation = None
+
             # Xóa các điểm và đường đi
             self.points = []
             self.node_A = None
