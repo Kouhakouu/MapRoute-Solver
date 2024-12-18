@@ -1,5 +1,6 @@
 import heapq
 from .heuristic import heuristic
+from algorithms import register_algorithm
 
 def a_star(graph, start, end, weight='length'):
     """
@@ -53,3 +54,5 @@ def a_star(graph, start, end, weight='length'):
         return path
     else:
         return []
+
+register_algorithm('A*', a_star)

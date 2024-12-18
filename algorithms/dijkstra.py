@@ -1,3 +1,5 @@
+from algorithms import register_algorithm
+
 def dijkstra(graph, start, end, weight='length'):
     """
     Tìm đường đi ngắn nhất bằng thuật toán Dijkstra.
@@ -51,3 +53,5 @@ def dijkstra(graph, start, end, weight='length'):
         return path
     else:
         return []
+
+register_algorithm('Dijkstra', dijkstra)

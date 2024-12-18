@@ -1,4 +1,6 @@
-def dfs(graph, start, end):
+from algorithms import register_algorithm
+
+def dfs(graph, start, end, weight=None):
     """
     Tìm đường đi bằng thuật toán DFS.
     
@@ -37,3 +39,5 @@ def dfs(graph, start, end):
         return path
     else:
         return []
+
+register_algorithm('DFS', dfs)

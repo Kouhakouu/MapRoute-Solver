@@ -1,4 +1,7 @@
-def bfs(graph, start, end):
+from algorithms import register_algorithm
+from collections import deque
+
+def bfs(graph, start, end, weight=None):
     """
     Tìm đường đi bằng thuật toán BFS.
     
@@ -10,8 +13,6 @@ def bfs(graph, start, end):
     Returns:
     - Danh sách các nút đại diện cho đường đi. Nếu không tìm thấy đường, trả về danh sách rỗng.
     """
-    from collections import deque
-
     queue = deque([start])
     visited = {start}
     previous = {start: None}
@@ -38,3 +39,5 @@ def bfs(graph, start, end):
         return path
     else:
         return []
+
+register_algorithm('BFS', bfs)

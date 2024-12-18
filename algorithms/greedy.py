@@ -1,7 +1,8 @@
 import heapq
 from .heuristic import heuristic
+from algorithms import register_algorithm
 
-def greedy(graph, start, end):
+def greedy(graph, start, end, weight=None):
     """
     Tìm đường đi bằng thuật toán Greedy Best-First Search.
     
@@ -42,3 +43,5 @@ def greedy(graph, start, end):
         return path
     else:
         return []
+
+register_algorithm('Greedy Best-First Search', greedy)
