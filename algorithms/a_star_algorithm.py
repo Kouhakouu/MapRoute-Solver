@@ -55,4 +55,4 @@ def a_star(graph, start, end, weight='length'):
     else:
         return []
 
-register_algorithm('A*', a_star)
+register_algorithm('A* Algorithm', a_star)

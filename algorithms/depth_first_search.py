@@ -1,9 +1,8 @@
 from algorithms import register_algorithm
-from collections import deque
 
-def bfs(graph, start, end, weight=None):
+def dfs(graph, start, end, weight=None):
     """
-    Tìm đường đi bằng thuật toán BFS.
+    Tìm đường đi bằng thuật toán DFS.
     
     Parameters:
     - graph: Đồ thị dưới dạng đối tượng NetworkX
@@ -13,19 +12,20 @@ def bfs(graph, start, end, weight=None):
     Returns:
     - Danh sách các nút đại diện cho đường đi. Nếu không tìm thấy đường, trả về danh sách rỗng.
     """
-    queue = deque([start])
-    visited = {start}
+    stack = [start]
+    visited = set()
     previous = {start: None}
 
-    while queue:
-        current = queue.popleft()
+    while stack:
+        current = stack.pop()
         if current == end:
             break
-        for neighbor in graph.neighbors(current):
-            if neighbor not in visited:
-                visited.add(neighbor)
-                previous[neighbor] = current
-                queue.append(neighbor)
+        if current not in visited:
+            visited.add(current)
+            for neighbor in graph.neighbors(current):
+                if neighbor not in visited:
+                    previous[neighbor] = current
+                    stack.append(neighbor)
 
     # Khôi phục đường đi
     path = []
@@ -40,4 +40,4 @@ def bfs(graph, start, end, weight=None):
     else:
         return []
 
-register_algorithm('BFS', bfs)
+register_algorithm('Depth-First Search', dfs)
