@@ -40,4 +40,4 @@ def bfs(graph, start, end, weight=None):
     else:
         return []
 
-register_algorithm('Breath-First Search', bfs)
+register_algorithm('Breadth-First Search', bfs)

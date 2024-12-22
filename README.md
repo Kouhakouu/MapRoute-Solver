@@ -1,6 +1,4 @@
-# Pathfinding Visualizer
-
-![Pathfinding Visualizer](path/to/screenshot.png) <!-- Replace with actual screenshot -->
+# MapRoute Solver
 
 ## Table of Contents
 
@@ -16,7 +14,7 @@
 
 ## Overview
 
-**Pathfinding Visualizer** is a Python-based application that provides an interactive graphical interface to visualize various pathfinding algorithms on a map. Built with Tkinter and leveraging the power of OSMnx and NetworkX, this tool allows users to select two points on a map and observe how different algorithms find the shortest path between them. The application supports an extensible architecture, enabling easy addition of new algorithms without modifying the core GUI code.
+**MapRoute Solver** is a Python-based application that provides an interactive graphical interface to visualize various pathfinding algorithms on a map. Built with Tkinter and leveraging the power of OSMnx and NetworkX, this tool allows users to select two points on a map and observe how different algorithms find the shortest path between them. The application supports an extensible architecture, enabling easy addition of new algorithms without modifying the core GUI code.
 
 ## Features
 
