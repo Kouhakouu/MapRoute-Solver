@@ -15,6 +15,12 @@ def main():
 
     G = load_map(place_name, filepath=graph_filepath)
 
+    if G.is_directed():
+        print("Đồ thị có hướng")
+
+    if G.is_multigraph():
+        print("Đồ thị có nhiều cạnh giữa hai đỉnh")
+
     root = tk.Tk()
     app = MapApp(root, G)
     root.mainloop()
